@@ -1,0 +1,249 @@
+library untuk buat Fake Database dan API
+
+Fake Database: Json-Server
+API: Axios
+
+redux: Global State Management
+redux react-redux
+
+db.json (runs on port 2000)
+npx json-server db.json -p 2000
+
+sync  = sesuai urutan
+async = yg jalan tergantung siapa duluan
+          ex. mau login, karna butuh waktu buat connect ke akun kita, jadi system nampilin loading page
+              yang dimana loading page itu lebih cepet keluarnya
+              kl gaada loading pake nnt yg muncul ky codingan html bau gitu, kaya binusmaya 
+
+lifecycle methods
+           > kaya mahluk hidup:
+  mount    [lahir]
+  update   [perkembangan atau pertumbuhan]
+  unmount  [mati]
+
+
+methond componentDidMount ketriger ketika semuah component lahir
+  ex. Masuk App > Render > componentDidMount
+
+componentDidUpdate ketriger ketika ada setState atau Perubahan props
+  ex. setState > Render > componentDidUpdate
+
+methond componentWillUnmount ketriger ketika semuah component lahir
+  ex. render > call componentWillUnmount > Delete Component
+      bisa ada render bisa engga
+
+Global State Management (mencakup satu applikasi)
+
+ReactStrictMode di matiin
+
+
+
+  //setState itu cmn manipulasi bukan ngubah
+  //ngambil data todoList Ubah format terus di masukin ke dalam todoList[{}]
+
+import React from "react";
+
+class todoItems extends React.Component {
+  // MEANING: class todoItems inherit(extend) the React Component
+
+  deleteBtnHandler() {
+    alert("you just click DELETE button");
+  }
+  btnHandler(msg) {
+    alert(`you just click ${msg} button`);
+  }
+
+  render() {
+    return (
+      <div>
+        <div className="my-1 d-flex felx-row justify-content-between todo-item-container align-items-center">
+          {/* props bentuknya boleh apa aja (INT, STRING, BOOL, DLL) */}
+          {this.props.todoData.Activity} ID = {this.props.todoData.ID}
+          <div>
+            <button
+              onClick={() =>
+                this.props.deleteTodoHandler(this.props.todoData.ID)
+              }
+              className="btn btn-danger"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => {
+                this.btnHandler("COMPLETE");
+              }}
+              className="btn btn-success"
+            >
+              Complete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+}
+
+export default todoItems;
+
+
+
+import React from "react";
+
+const todoItems2 = (props) => {
+  // btnHandlers = (msg) => {
+  //   alert(`you just click ${msg} button`);
+  // };
+
+  const btnHandler = (msg) => {
+    alert(`you just click ${msg} button`);
+  };
+  return (
+    <div>
+      <div className="my-1 d-flex felx-row justify-content-between todo-item-container align-items-center">
+        {props.todoData.Activity}
+        ID = {props.todoData.ID}
+        <div>
+          <button
+            onClick={() => {
+              btnHandler("DELETE");
+            }}
+            className="btn btn-danger"
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => {
+              btnHandler("COMPLETE");
+            }}
+            className="btn btn-success"
+          >
+            Complete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default todoItems2;
+
+
+
+//////////////////////////////////////// APP.jsx ////////////////////////////////////////
+import React, { Component } from "react";
+import Axios from "axios";
+import Logo from "./logo.svg";
+import "./App.css";
+import "./style.css";
+import "bootstrap/dist/css/bootstrap.css";
+// HARUS BGT AWALNYA PAKE KAPITAL YA GAIS :')
+import TodoItems from "./components/todoItems";
+
+class App extends React.Component {
+  state = {
+    todoLists: [],
+    inputTodo: "",
+  };
+
+  fetchTodoLists = () => {
+    Axios.get("http://localhost:2000/todo")
+      .then((res) => {
+        console.log(res.data);
+        this.setState({ todoLists: res.data });
+      })
+      .catch((err) => {
+        alert("an error has been occurred on fetchTodoLists Function");
+      });
+  };
+
+  //DELETE: del is trigg > Get id > API Delete (del obj on db.json) > Fetch > SetState TodoLists > Render TodoLists
+  deleteTodo = (id) => {
+    Axios.delete(`http://localhost:2000/todo/${id}`)
+      .then(() => {
+        alert("todo is deleted");
+        this.fetchTodoLists();
+      })
+      .catch((err) => {
+        alert("an error has been occurred on deleteTodo Function");
+      });
+  };
+
+  //COMPLETE: comp is trigg > Get id > API Patch (isFinised True) > Fetch > SetState TodoLists > btn Disabled > Render TodoLists
+  completeTodo = (id) => {
+    Axios.patch(`http://localhost:2000/todo/${id}`, { isFinished: true })
+      .then(() => {
+        alert("yeay todo is completed");
+        this.fetchTodoLists();
+      })
+      .catch((err) => {
+        alert("an error has been occurred on completeTodo Function");
+      });
+  };
+
+  //ADD: setState inputTodo > add is trigg > API Post > Fetch > SetState TodoLists > Render TodoLists
+  inputHandler = (e) => {
+    this.setState({ inputTodo: e.target.value });
+    console.log(`yg gw ketik adalah: ${e.target.value}`);
+    console.log(`yg ada di state gw: ${this.state.inputTodo}`);
+  };
+
+  componentDidMount() {
+    this.fetchTodoLists();
+  }
+
+  renderTodoLists = () => {
+    return this.state.todoLists.map((v) => {
+      return (
+        <TodoItems
+          completeTodoHandler={this.completeTodo}
+          deleteTodoHandler={this.deleteTodo}
+          todoData={v}
+        />
+      );
+    });
+  };
+
+  addTodo = () => {
+    Axios.post("http://localhost:2000/todo", {
+      Activity: this.state.inputTodo,
+      isFinished: false,
+    })
+      .then(() => {
+        alert(`new todo has been added`);
+        this.fetchTodoLists();
+      })
+      .catch((err) => {
+        alert("an error has been occurred on addTodo Function");
+      });
+  };
+
+  //START: Render > Mount > Fetch > SetState TodoLists > Render Todo Lists
+  render() {
+    return (
+      <div className="d-flex flex-column align-items-center">
+        <h1> Todo List </h1>
+        <div>
+          <input
+            onChange={this.inputHandler}
+            type="text"
+            className="ex-3"
+          ></input>
+          <button onClick={this.addTodo} className="btn btn-primary">
+            add
+          </button>
+          {/* <button onClick={this.fetchTodoLists} className="btn btn-primary">
+            todo Lists
+          </button> */}
+          {this.renderTodoLists()}
+        </div>
+      </div>
+    );
+  }
+}
+export default App;
+
+
+
+
+
+
